@@ -70,6 +70,20 @@ while (true) {
                 move(i);
             }
         } else {
+
+            /* TESTING STUN RULE
+            if (enemy.length > 0) {
+                for (var j = 0; j < enemy.length; j++) {
+                    if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 1760) {
+                        printErr('Buster can stun');
+                        print('STUN ' + enemy[j].enemyId);
+                        break;
+                    }
+                }
+                move(i);
+            }
+            */
+
             if (ghosts.length > 0) {
                 var canBust = 0;
                 for (var j = 0; j < ghosts.length; j++) {
