@@ -36,7 +36,7 @@ while (true) {
                 state: state,
                 value: value
             });
-            printErr(inputs);
+            printErr('Buster ' + inputs);
         } else if (entityType == -1) {
             ghosts.push({
                 ghostId: entityId,
@@ -45,7 +45,7 @@ while (true) {
                 state: state,
                 value: value
             });
-            printErr(inputs);
+            printErr('Ghost ' + inputs);
         } else {
             enemy.push({
                 enemyId: entityId,
@@ -54,6 +54,7 @@ while (true) {
                 state: state,
                 value: value
             });
+            printErr('Enemy ' + inputs);
         }
     }
     for (var i = 0; i < bustersPerPlayer; i++) {
@@ -63,12 +64,18 @@ while (true) {
         }
 
         if (busters[i].state == 1) {
+            busterMove[i] = {
+                x: teamCoords.x,
+                y: teamCoords.y
+            };
             if (distance(busters[i].x, busters[i].y, teamCoords.x, teamCoords.y) < 1600) {
                 busterMove[i] = makePoint();
                 print('RELEASE');
             } else {
+                avoidEnemy();
                 move(i);
             }
+
         } else {
 
             /* TESTING STUN RULE
@@ -100,14 +107,18 @@ while (true) {
                     }
                 }
                 if (canBust === 0) {
+                    avoidEnemy();
                     move(i);
                 }
             } else {
+                avoidEnemy();
                 move(i);
             }
+
+
         }
     }
-    printErr('number of ghosts nearby: ' + ghosts.length);
+    //printErr('number of ghosts nearby: ' + ghosts.length);
 }
 
 function distance(x1, y1, x2, y2) {
@@ -126,4 +137,56 @@ function makePoint() {
 
 function move(i) {
     print('MOVE ' + busterMove[i].x + ' ' + busterMove[i].y);
+}
+
+function makeCirclePoint(radius) {
+    var x = Math.floor(Math.random() * radius);
+    var y = Math.floor(Math.sqrt(Math.pow(radius, 2) - Math.pow(x, 2)));
+    return [
+        [x, y],
+        [(x * (-1)), y],
+        [x, (y * (-1))],
+        [(x * (-1)), (y * (-1))]
+    ];
+}
+
+function makePointOrigin(x, y, radius) {
+    return makeCirclePoint(radius).map(function(item) {
+        return [(item[0] + x), (item[1] + y)];
+    });
+}
+
+function parseSafePoints(x, y, arr) {
+    return arr.filter(function(item) {
+        if (distance(x, y, item[0], item[1]) > 2200) {
+            return item;
+        }
+    });
+}
+
+function findClosestEnemy(x, y, arr) {
+    return arr.reduce(function(prev, curr) {
+        if (distance(x, y, prev.x, prev.y) < distance(x, y, curr.x, curr.y)) {
+            return prev;
+        } else {
+            return curr;
+        }
+    });
+}
+
+function avoidEnemy() {
+    if (enemy.length) {
+        var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
+        if (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760) {
+            try {
+                var possiblePoints = makePointOrigin(busters[i].x, busters[i].y, 800);
+                var safePoints = parseSafePoints(closestEnemy.x, closestEnemy.y, possiblePoints);
+                busterMove[i].x = safePoints[0][0];
+                busterMove[i].y = safePoints[0][1];
+                printErr('Dodge Attempt');
+            } catch (e) {
+                printErr('No safe points');
+            }
+        }
+    }
 }
