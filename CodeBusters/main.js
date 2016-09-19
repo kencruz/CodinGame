@@ -59,8 +59,16 @@ while (true) {
     }
     for (var i = 0; i < bustersPerPlayer; i++) {
 
-        if (!busterMove[i] || (busters[i].x == busterMove[i].x && busters[i].y == busterMove[i].y)) {
+        if (!busterMove[i]) {
             busterMove[i] = makePoint();
+        }
+
+        if (busterMove[i].cooldown) {
+            busterMove[i].cooldown--;
+        }
+
+        if (busters[i].x == busterMove[i].x && busters[i].y == busterMove[i].y) {
+            newPoint();
         }
 
         if (busters[i].state == 1) {
@@ -69,7 +77,7 @@ while (true) {
                 y: teamCoords.y
             };
             if (distance(busters[i].x, busters[i].y, teamCoords.x, teamCoords.y) < 1600) {
-                busterMove[i] = makePoint();
+                newPoint();
                 print('RELEASE');
             } else {
                 avoidEnemy();
@@ -77,20 +85,7 @@ while (true) {
             }
 
         } else {
-
-            /* TESTING STUN RULE
-            if (enemy.length > 0) {
-                for (var j = 0; j < enemy.length; j++) {
-                    if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 1760) {
-                        printErr('Buster can stun');
-                        print('STUN ' + enemy[j].enemyId);
-                        break;
-                    }
-                }
-                move(i);
-            }
-            */
-
+            
             if (ghosts.length > 0) {
                 var canBust = 0;
                 for (var j = 0; j < ghosts.length; j++) {
@@ -107,15 +102,16 @@ while (true) {
                     }
                 }
                 if (canBust === 0) {
-                    avoidEnemy();
+                    //stunEnemy();
                     move(i);
                 }
             } else {
+                if (!busterMove[i].cooldown) {
+                    //stunEnemy();
+                }
                 avoidEnemy();
                 move(i);
             }
-
-
         }
     }
     //printErr('number of ghosts nearby: ' + ghosts.length);
@@ -131,8 +127,14 @@ function distance(x1, y1, x2, y2) {
 function makePoint() {
     return {
         x: Math.floor(Math.random() * 16000),
-        y: Math.floor(Math.random() * 9000)
+        y: Math.floor(Math.random() * 9000),
+        cooldown: 0
     };
+}
+
+function newPoint() {
+    busterMove[i].x = Math.floor(Math.random() * 16000);
+    busterMove[i].y = Math.floor(Math.random() * 9000);
 }
 
 function move(i) {
@@ -188,5 +190,18 @@ function avoidEnemy() {
                 printErr('No safe points');
             }
         }
+    }
+}
+
+function stunEnemy() {
+    if (enemy.length) {
+        var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
+        if ((closestEnemy.state !== 2) && (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760)) {
+            busterMove[i].cooldown = 21;
+            print('STUN ' + closestEnemy.enemyId);
+            newPoint();
+        }
+    } else {
+        move(i);
     }
 }
