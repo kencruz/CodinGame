@@ -36,7 +36,7 @@ while (true) {
                 state: state,
                 value: value
             });
-            printErr('Buster ' + inputs);
+            //printErr('Buster ' + inputs);
         } else if (entityType == -1) {
             ghosts.push({
                 ghostId: entityId,
@@ -45,7 +45,7 @@ while (true) {
                 state: state,
                 value: value
             });
-            printErr('Ghost ' + inputs);
+            //printErr('Ghost ' + inputs);
         } else {
             enemy.push({
                 enemyId: entityId,
@@ -103,6 +103,7 @@ while (true) {
                 }
                 if (canBust === 0) {
                     //stunEnemy();
+                    avoidEnemy();
                     move(i);
                 }
             } else {
@@ -177,26 +178,31 @@ function findClosestEnemy(x, y, arr) {
 }
 
 function avoidEnemy() {
-    if (enemy.length) {
-        var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
-        if (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760) {
-            try {
-                var possiblePoints = makePointOrigin(busters[i].x, busters[i].y, 800);
-                var safePoints = parseSafePoints(closestEnemy.x, closestEnemy.y, possiblePoints);
-                busterMove[i].x = safePoints[0][0];
-                busterMove[i].y = safePoints[0][1];
-                printErr('Dodge Attempt');
-            } catch (e) {
-                printErr('No safe points');
+    if (busters[i].value == -1) {
+        if (enemy.length) {
+            var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
+            if (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760) {
+                try {
+                    var possiblePoints = makePointOrigin(busters[i].x, busters[i].y, 800).concat(makePointOrigin(busters[i].x, busters[i].y, 800));
+                    var safePoints = parseSafePoints(closestEnemy.x, closestEnemy.y, possiblePoints);
+                    busterMove[i].x = safePoints[0][0];
+                    busterMove[i].y = safePoints[0][1];
+                    printErr('Dodge Attempt with ' + safePoints.length + ' safe points');
+                } catch (e) {
+                    printErr('No safe points');
+                    //avoidEnemy();
+                }
             }
         }
-    }
+    } 
+    
 }
 
 function stunEnemy() {
     if (enemy.length) {
         var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
-        if ((closestEnemy.state !== 2) && (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760)) {
+        if ((closestEnemy.state !== 2) && 
+        (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760)) {
             busterMove[i].cooldown = 21;
             print('STUN ' + closestEnemy.enemyId);
             newPoint();
