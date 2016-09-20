@@ -4,13 +4,16 @@
 var bustersPerPlayer = parseInt(readline()); // the amount of busters you control
 var ghostCount = parseInt(readline()); // the amount of ghosts on the map
 var myTeamId = parseInt(readline()); // if this is 0, your base is on the top left of the map, if it is one, on the bottom right
+var enemyTeam;
 var teamCoords = {};
 if (myTeamId) {
     teamCoords.x = 16000;
     teamCoords.y = 9000;
+    enemyTeam = 0;
 } else {
     teamCoords.x = 0;
     teamCoords.y = 0;
+    enemyTeam = 1;
 }
 
 var busterMove = [];
@@ -31,6 +34,7 @@ while (true) {
         //printErr(inputs);
         if (entityType == myTeamId) {
             busters.push({
+                entityId: entityId,
                 x: x,
                 y: y,
                 state: state,
@@ -46,7 +50,7 @@ while (true) {
                 value: value
             });
             //printErr('Ghost ' + inputs);
-        } else if (state !== 2) {
+        } else if (state == enemyTeam) {
             enemy.push({
                 enemyId: entityId,
                 x: x,
@@ -63,91 +67,55 @@ while (true) {
             busterMove[i] = makePoint();
         }
 
-
-
         if (busterMove[i].cooldown > 0) {
             busterMove[i].cooldown--;
-        }
-
-        if (busters[i].state == 2) {
-            printErr('Stunned for ' + busters[i].value + ' turns');
         }
 
         if (busters[i].x == busterMove[i].x && busters[i].y == busterMove[i].y) {
             newPoint();
         }
 
-        if (busters[i].state !== 2) {
-            if (enemy.length > 0) {
-                var canBust = 0;
-                for (var j = 0; j < enemy.length; j++) {
-                    if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 1760) {
-                        printErr('Buster can bust');
-                        canBust = 1;
-                        print('STUN ' + enemy[j].enemyId);
-                        busterMove[i].x = teamCoords.x;
-                        busterMove[i].y = teamCoords.y;
-                        break;
+        if (isStunned()) {
+            move(i);
+        } else {
+            if (haveGhost()) {
+                if (closeToBase()) {
+                    release();
+                } else {
+                    if (detectEnemy()) {
+                        if (closeToStun) {
+                            avoidEnemy();
+                        }
                     }
-                }
-                if (canBust === 0) {
                     move(i);
                 }
+
             } else {
-                move(i);
-            }
-
-        }
-
-
-
-        /*
-                if (busters[i].state == 1) {
-                    busterMove[i].x = teamCoords.x;
-                    busterMove[i].y = teamCoords.y;
-                    if (distance(busters[i].x, busters[i].y, teamCoords.x, teamCoords.y) < 1600) {
-                        newPoint();
-                        print('RELEASE');
+                if (detectGhost()) {
+                    if (closeToGhost()) {
+                        bustGhost();
+                        //break;
                     } else {
-                        avoidEnemy();
                         move(i);
                     }
 
                 } else {
-                    if (busters[i].state !== 2) {
-                        if (ghosts.length > 0) {
-                        var canBust = 0;
-                        for (var j = 0; j < ghosts.length; j++) {
-                            if (distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) < 1760 &&
-                                distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) > 900) {
-                                printErr('Buster can bust');
-                                canBust = 1;
-                                print('BUST ' + ghosts[j].ghostId);
-                                busterMove[i].x = teamCoords.x;
-                                busterMove[i].y = teamCoords.y;
-                                break;
+                    if (detectEnemy()) {
+                        if (closeToStun()) {
+                            if (canStun()) {
+                                stun();
+                            } else {
+                                avoidEnemy();
+                                //move(i);
                             }
                         }
-                        if (canBust === 0) {
-                            stunEnemy();
-                            avoidEnemy();
-                            move(i);
-                        }
-                    } else {
-                        if (!busterMove[i].cooldown) {
-                            stunEnemy();
-                        }
-                        avoidEnemy();
-                        move(i);
                     }
-                        
-                    } else {
-                        move(i);
-                    }
-                    
+                    move(i);
                 }
-                //move(i);
-                */
+            }
+        }
+        
+        printErr('Buster ' + busters[i].entityId + ' move to ' + busterMove[i].x + ' ' + busterMove[i].y);
     }
     //printErr('number of ghosts nearby: ' + ghosts.length);
 
@@ -236,18 +204,100 @@ function avoidEnemy() {
 
 }
 
-function stunEnemy() {
-    if (enemy.length) {
-        var closestEnemy = findClosestEnemy(busters[i].x, busters[i].y, enemy);
-        if ((closestEnemy.state !== 2) &&
-            (distance(busters[i].x, busters[i].y, closestEnemy.x, closestEnemy.y) < 1760)) {
-            busterMove[i].cooldown = 21;
-            newPoint();
-            print('STUN ' + closestEnemy.enemyId);
-
-        }
+function isStunned() {
+    if (busters[i].state == 2) {
+        return true;
     } else {
-        //move(i);
-        newPoint();
+        return false;
+    }
+}
+
+function haveGhost() {
+    if (busters[i].state == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function closeToBase() {
+    if (distance(busters[i].x, busters[i].y, teamCoords.x, teamCoords.y) < 1600) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function release() {
+    newPoint();
+    print('RELEASE');
+}
+
+function detectGhost() {
+    if (ghosts.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function closeToGhost() {
+    var test = 0;
+    for (var j = 0; j < ghosts.length; j++) {
+        if (distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) < 1760 &&
+            distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) > 900) {
+            test = 1;
+        }
+    }
+    return test;
+}
+
+function bustGhost() {
+    for (var j = 0; j < ghosts.length; j++) {
+        if (distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) < 1760 &&
+            distance(busters[i].x, busters[i].y, ghosts[j].x, ghosts[j].y) > 900) {
+            print('BUST ' + ghosts[j].ghostId);
+            busterMove[i].x = teamCoords.x;
+            busterMove[i].y = teamCoords.y;
+            break;
+        }
+    }
+}
+
+function detectEnemy() {
+    if (enemy.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function canStun() {
+    if (busters[i].cooldown > 0) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function closeToStun() {
+    var test = 0;
+    for (var j = 0; j < enemy.length; j++) {
+        if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 1760) {
+            test = 1;
+        }
+    }
+    return test;
+}
+
+function stun() {
+    for (var j = 0; j < enemy.length; j++) {
+        if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 1760) {
+            printErr('Buster can stun');
+            print('STUN ' + enemy[j].enemyId);
+            busterMove[i].cooldown = 20;
+            newPoint();
+            break;
+        }
     }
 }
