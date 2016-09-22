@@ -92,6 +92,7 @@ while (true) {
                 move(i);
             }
         } else if (busters[i].state === 0) {
+            assistCheck();
             if (detectEnemy()) {
                 if (closeToStun(i) && canStun(i)) {
                     stun(i);
@@ -319,5 +320,15 @@ function stun(i) {
     }
     if (failCheck === 1) {
         move(i);
+    }
+}
+
+function assistCheck() {
+    for (var j = 0; j < busters.length; j++) {
+        if (busters[j].state === 3) {
+            busterMove[i].x = busters[j].x;
+            busterMove[i].y = busters[j].y;
+            break;
+        }
     }
 }
