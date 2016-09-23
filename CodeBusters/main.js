@@ -5,17 +5,26 @@ var bustersPerPlayer = parseInt(readline()); // the amount of busters you contro
 var ghostCount = parseInt(readline()); // the amount of ghosts on the map
 var myTeamId = parseInt(readline()); // if this is 0, your base is on the top left of the map, if it is one, on the bottom right
 var enemyTeam;
+var enemyCoords = {};
 var teamCoords = {};
+
 if (myTeamId) {
     teamCoords.x = 16000;
     teamCoords.y = 9000;
     enemyTeam = 0;
+    enemyCoords.x = 0;
+    enemyCoords.y = 0;
 } else {
     teamCoords.x = 0;
     teamCoords.y = 0;
     enemyTeam = 1;
+    enemyCoords.x = 16000;
+    enemyCoords.y = 9000;
 }
 
+
+var mapGrid = initGrid();
+var interceptNodes = interceptPoints(mapGrid);
 var busterMove = [];
 // game loop
 while (true) {
@@ -58,7 +67,7 @@ while (true) {
                 state: state,
                 value: value
             });
-            printErr('Enemy ' + inputs);
+            //printErr('Enemy ' + inputs);
         }
     }
     for (var i = 0; i < bustersPerPlayer; i++) {
@@ -92,10 +101,36 @@ while (true) {
                 move(i);
             }
         } else if (busters[i].state === 0) {
-            assistCheck();
-            if (detectEnemy()) {
-                if (closeToStun(i) && canStun(i)) {
-                    stun(i);
+
+
+            if (i === 0) { //INTERCEPTOR
+                if (canStun(i)) {
+                    if (detectEnemy()) {
+                        if (interceptEnemyState(i) === 1 || interceptEnemyState(i) === 3) {
+                            stun(i);
+                        } else if (interceptEnemyState(i) === 0) {
+                            avoidEnemy();
+                            move(i);
+                        } else {
+                            move(i);
+
+                        }
+                    } else {
+                        //move(i);
+
+                        if (detectGhost()) {
+                            if (closeToGhost(i)) {
+                                bustGhost(i);
+                            } else {
+                                move(i);
+                            }
+                        } else {
+                            //avoidEnemy();
+                            move(i);
+                        }
+
+                    }
+
                 } else {
                     if (detectGhost()) {
                         if (closeToGhost(i)) {
@@ -104,19 +139,39 @@ while (true) {
                             move(i);
                         }
                     } else {
-                        avoidEnemy();
                         move(i);
                     }
                 }
 
-            } else if (detectGhost()) {
-                if (closeToGhost(i)) {
-                    bustGhost(i);
+
+
+            } else { //REST OF THE BUSTERS
+                assistCheck();
+                if (detectEnemy()) {
+                    if (closeToStun(i) && canStun(i)) {
+                        stun(i);
+                    } else {
+                        if (detectGhost()) {
+                            if (closeToGhost(i)) {
+                                bustGhost(i);
+                            } else {
+                                move(i);
+                            }
+                        } else {
+                            avoidEnemy();
+                            move(i);
+                        }
+                    }
+
+                } else if (detectGhost()) {
+                    if (closeToGhost(i)) {
+                        bustGhost(i);
+                    } else {
+                        move(i);
+                    }
                 } else {
                     move(i);
                 }
-            } else {
-                move(i);
             }
         }
     }
@@ -140,8 +195,12 @@ function makePoint() {
 }
 
 function newPoint(i) {
-    busterMove[i].x = Math.floor(Math.random() * 16000);
-    busterMove[i].y = Math.floor(Math.random() * 9000);
+    if (i === 0) {
+        interceptNewPoint(interceptNodes);
+    } else {
+        busterMove[i].x = Math.floor(Math.random() * 16000);
+        busterMove[i].y = Math.floor(Math.random() * 9000);
+    }
 }
 
 function move(i) {
@@ -208,7 +267,6 @@ function avoidEnemy() {
             printErr('Dodge Attempt with ' + safePoints.length + ' safe points');
         } catch (e) {
             printErr('No safe points');
-            //avoidEnemy();
         }
     }
 }
@@ -306,6 +364,16 @@ function closeToStun(i) {
     return test;
 }
 
+function interceptEnemyState(i) {
+    var test = false;
+    for (var j = 0; j < enemy.length; j++) {
+        if (distance(busters[i].x, busters[i].y, enemy[j].x, enemy[j].y) < 2200) {
+            test = enemy[j].state;
+        }
+    }
+    return test;
+}
+
 function stun(i) {
     var failCheck = 1;
     for (var j = 0; j < enemy.length; j++) {
@@ -314,7 +382,6 @@ function stun(i) {
             print('STUN ' + enemy[j].enemyId);
             busterMove[i].cooldown = 21;
             failCheck = 0;
-            //newPoint();
             break;
         }
     }
@@ -331,4 +398,30 @@ function assistCheck() {
             break;
         }
     }
+}
+
+function initGrid() {
+    var arr = [];
+    for (var x = 0; x < 17; x++) {
+        for (var y = 0; y < 10; y++) {
+            arr.push([(x * 1000), (y * 1000)]);
+        }
+    }
+    return arr;
+}
+
+function interceptPoints(arr) {
+    return arr.filter(function(item) {
+        if (distance(enemyCoords.x, enemyCoords.y, item[0], item[1]) < 3000 &&
+            distance(enemyCoords.x, enemyCoords.y, item[0], item[1]) > 1600) {
+            return item;
+        }
+    });
+}
+
+function interceptNewPoint(arr) {
+    var randomPoint = arr[Math.floor(Math.random() * arr.length)];
+    printErr(arr.length);
+    busterMove[0].x = randomPoint[0];
+    busterMove[0].y = randomPoint[1];
 }
