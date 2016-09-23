@@ -104,18 +104,20 @@ while (true) {
 
 
             if (i === 0) { //INTERCEPTOR
-                move(i);
-                /*
+                if (canStun(i)) {
                     if (detectEnemy()) {
                         if (interceptEnemyState(i) === 1 || interceptEnemyState(i) === 3) {
                             stun(i);
                         } else if (interceptEnemyState(i) === 0) {
-                            //avoidEnemy();
+                            avoidEnemy();
                             move(i);
                         } else {
                             move(i);
+
                         }
                     } else {
+                        //move(i);
+
                         if (detectGhost()) {
                             if (closeToGhost(i)) {
                                 bustGhost(i);
@@ -126,8 +128,23 @@ while (true) {
                             //avoidEnemy();
                             move(i);
                         }
+
                     }
-                */
+
+                } else {
+                    if (detectGhost()) {
+                        if (closeToGhost(i)) {
+                            bustGhost(i);
+                        } else {
+                            move(i);
+                        }
+                    } else {
+                        move(i);
+                    }
+                }
+
+
+
             } else { //REST OF THE BUSTERS
                 assistCheck();
                 if (detectEnemy()) {
@@ -395,7 +412,8 @@ function initGrid() {
 
 function interceptPoints(arr) {
     return arr.filter(function(item) {
-        if (distance(enemyCoords.x, enemyCoords.y, item[0], item[1]) < 4500) {
+        if (distance(enemyCoords.x, enemyCoords.y, item[0], item[1]) < 3000 &&
+            distance(enemyCoords.x, enemyCoords.y, item[0], item[1]) > 1600) {
             return item;
         }
     });
