@@ -20,11 +20,12 @@ while (true) {
     var myPlayer = {};
     for (var i = 0; i < height; i++) {
         var row = readline();
+        printErr(row);
         for (var j = 0; j < row.length; j++) {
             map.push({x: j, y: i, type: row[j]});
         }
     }
-    printErr('# of Optimal spots: ' + adjBoxTiles(map).length);
+    //printErr('# of Optimal spots: ' + adjBoxTiles(map).length);
     var entities = parseInt(readline());
     for (var i = 0; i < entities; i++) {
         var inputs = readline().split(' ');
@@ -34,6 +35,8 @@ while (true) {
         var y = parseInt(inputs[3]);
         var param1 = parseInt(inputs[4]);
         var param2 = parseInt(inputs[5]);
+        
+        
         
         if (entityType === 0 && owner === myId) {
             if (!moveGoal) {
@@ -59,6 +62,9 @@ while (true) {
             }       
             //print('MOVE 5 5');
         }
+        
+        //print('MOVE 5 5')
+        
     }
 
     // Write an action using print()
@@ -104,7 +110,7 @@ function bombCount(arr) {
 
 function filterType(arr, str) {
     return arr.filter (function(item) {
-        if (item.type === str) {
+        if (!isNaN(item.type)) {
             return item;
         }
     });
